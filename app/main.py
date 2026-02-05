@@ -163,5 +163,6 @@ async def get_session_intelligence(session_id: str, x_api_key: str = Header(None
 
 
 @app.get("/health")
+@app.get("/healthz")
 async def health_check():
-    return {"status": "healthy", "service": "agentic-honeypot"}
+    return {"status": "ok"}
