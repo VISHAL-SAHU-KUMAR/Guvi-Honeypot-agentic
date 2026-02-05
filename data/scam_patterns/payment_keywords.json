@@ -1,0 +1,20 @@
+{
+    "payment": [
+        "UPI",
+        "bank",
+        "account",
+        "transfer",
+        "OTP",
+        "card",
+        "CVV",
+        "expiry"
+    ],
+    "platforms": [
+        "Paytm",
+        "PhonePe",
+        "GPay",
+        "SBI",
+        "HDFC",
+        "ICICI"
+    ]
+}

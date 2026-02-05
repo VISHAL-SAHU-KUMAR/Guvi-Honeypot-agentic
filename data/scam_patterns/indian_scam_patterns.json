@@ -1,0 +1,42 @@
+{
+    "urgency_keywords": [
+        "account blocked",
+        "verify immediately",
+        "urgent action",
+        "suspend",
+        "limited time",
+        "expire today",
+        "कार्रवाई करें",
+        "तुरंत",
+        "खाता बंद",
+        "ब्लॉक हो जाएगा"
+    ],
+    "payment_keywords": [
+        "UPI ID",
+        "bank account",
+        "transfer",
+        "payment",
+        "refund",
+        "cashback",
+        "पेमेंट",
+        "खाता नंबर"
+    ],
+    "phishing_indicators": [
+        "bit.ly",
+        "tinyurl",
+        "click here",
+        "verify now",
+        "login",
+        "update details"
+    ],
+    "indian_bank_names": [
+        "SBI",
+        "HDFC",
+        "ICICI",
+        "Axis",
+        "PNB",
+        "Paytm",
+        "PhonePe",
+        "Google Pay"
+    ]
+}

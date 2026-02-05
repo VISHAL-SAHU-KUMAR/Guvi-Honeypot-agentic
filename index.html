@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core Sentinel | Cyber Monitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230f172a%22/><path d=%22M50 25L75 35V55C75 70 50 80 50 80C50 80 25 70 25 55V35L50 25Z%22 fill=%22none%22 stroke=%22%2360a5fa%22 stroke-width=%225%22/><circle cx=%2250%22 cy=%2250%22 r=%2210%22 fill=%22%23a855f7%22/></svg>">
+    <style>
+        :root {
+            --neon-blue: #60a5fa;
+            --neon-purple: #a855f7;
+            --bg-dark: #010409;
+            --card-bg: rgba(13, 17, 23, 0.95);
+            --border: rgba(56, 189, 248, 0.2);
+            --border-dim: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg-dark);
+            color: #e6edf3;
+            min-height: 100vh;
+            overflow: hidden;
+            background-image:
+                radial-gradient(circle at 50% -20%, rgba(96, 165, 250, 0.15), transparent 60%),
+                linear-gradient(rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 30px 30px, 30px 30px;
+        }
+
+        .glass {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .cyber-header {
+            border-bottom: 2px solid var(--border);
+            background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.05), transparent);
+        }
+
+        .terminal-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: #4ade80;
+        }
+
+        .chat-container::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 10px;
+        }
+
+        .typing-dot {
+            width: 4px;
+            height: 4px;
+            background: var(--neon-blue);
+            border-radius: 50%;
+            animation: typing 1s infinite alternate;
+        }
+
+        @keyframes typing {
+            from {
+                opacity: 0.3;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .registry-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-dim);
+            transition: all 0.3s ease;
+        }
+
+        .registry-card:hover {
+            border-color: var(--neon-blue);
+            background: rgba(96, 165, 250, 0.05);
+        }
+
+        .scanline {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent, rgba(56, 189, 248, 0.01), transparent);
+            pointer-events: none;
+            animation: scan 10s linear infinite;
+        }
+
+        @keyframes scan {
+            0% {
+                top: -100%;
+            }
+
+            100% {
+                top: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body class="p-4 flex flex-col h-screen overflow-hidden">
+    <div class="scanline"></div>
+
+    <!-- Top System Nav -->
+    <header class="flex justify-between items-center px-6 py-3 cyber-header mb-4">
+        <div class="flex items-center gap-4">
+            <svg width="36" height="36" viewBox="0 0 100 100">
+                <path d="M50 15L85 30V60C85 75 50 85 50 85S15 75 15 60V30L50 15Z" fill="none" stroke="#60a5fa"
+                    stroke-width="8" />
+                <circle cx="50" cy="50" r="10" fill="#a855f7" class="animate-pulse" />
+            </svg>
+            <div>
+                <h1 class="text-xl font-black tracking-tighter text-blue-400">CORE_SENTINEL <span
+                        class="text-white">v4.2.0</span></h1>
+                <p class="text-[9px] font-mono text-slate-500 uppercase tracking-widest">Autonomous Scam-Engagement
+                    Kernel</p>
+            </div>
+        </div>
+
+        <div class="flex gap-8 items-center">
+            <div class="flex flex-col items-end">
+                <span class="text-[9px] text-slate-500 font-bold uppercase">Kernel Uptime</span>
+                <span id="uptime" class="text-sm font-mono text-blue-300">00:00:00:00</span>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="resetSession()"
+                    class="glass px-6 py-1.5 text-[10px] font-black hover:bg-blue-500/10 transition uppercase tracking-widest">Reboot
+                    Kernel</button>
+                <div
+                    class="bg-green-500/10 border border-green-500/30 text-green-400 px-3 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> ALL_NODES_ACTIVE
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 grid grid-cols-12 gap-4 overflow-hidden">
+
+        <!-- Intelligence Registry (Left) -->
+        <div class="col-span-3 flex flex-col gap-4">
+            <div class="glass flex-1 p-5 flex flex-col overflow-hidden">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="text-[10px] font-black text-slate-400 tracking-widest uppercase flex items-center gap-2">
+                        <i data-lucide="database" class="w-3 h-3"></i> Intelligence_Registry
+                    </h3>
+                </div>
+
+                <div class="space-y-6 overflow-y-auto pr-2 custom-scrollbar flex-1">
+                    <div class="space-y-2">
+                        <label
+                            class="text-[9px] font-bold text-blue-500/70 uppercase tracking-widest">Financial_Accounts</label>
+                        <div id="intel-banks" class="space-y-1"></div>
+                    </div>
+                    <div class="space-y-2">
+                        <label
+                            class="text-[9px] font-bold text-purple-500/70 uppercase tracking-widest">UPI_Gateways</label>
+                        <div id="intel-upis" class="space-y-1"></div>
+                    </div>
+                    <div class="space-y-2">
+                        <label
+                            class="text-[9px] font-bold text-red-500/70 uppercase tracking-widest">Malicious_Links</label>
+                        <div id="intel-links" class="space-y-1"></div>
+                    </div>
+                    <div class="space-y-2">
+                        <label
+                            class="text-[9px] font-bold text-orange-500/70 uppercase tracking-widest">Context_Keywords</label>
+                        <div id="intel-keywords" class="flex flex-wrap gap-1"></div>
+                    </div>
+                </div>
+
+                <!-- GUVI Upload Stats -->
+                <div class="mt-6 pt-5 border-t border-slate-800">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[9px] font-bold text-slate-500 uppercase">Callback_Sync_Status</span>
+                        <span id="callback-status" class="text-[10px] font-mono text-blue-400">READY</span>
+                    </div>
+                    <div class="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
+                        <div id="callback-progress"
+                            class="bg-blue-600 h-full w-0 transition-all duration-1000 shadow-[0_0_8px_rgba(37,99,235,0.4)]">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Central Console: Balanced 100vh Layout -->
+        <div class="col-span-6 flex flex-col h-full overflow-hidden">
+            <!-- Analytics Bar (Fixed height) -->
+            <div class="grid grid-cols-3 gap-3 mb-4 flex-shrink-0">
+                <div class="glass p-3 flex justify-between items-center bg-blue-500/5">
+                    <div>
+                        <p class="text-[8px] text-slate-500 font-bold uppercase">Detection_Certainty</p>
+                        <p id="scam-prob" class="text-xl font-black font-mono text-blue-400">0.00%</p>
+                    </div>
+                    <input type="hidden" id="scam-prob-val" value="0">
+                    <div class="h-8 w-8 rounded bg-blue-500/10 flex items-center justify-center">
+                        <i data-lucide="scan-eye" class="w-4 h-4 text-blue-400"></i>
+                    </div>
+                </div>
+                <div class="glass p-3 flex justify-between items-center">
+                    <div>
+                        <p class="text-[8px] text-slate-500 font-bold uppercase">Burst_Payloads</p>
+                        <p id="msg-count" class="text-xl font-black font-mono text-slate-200">0</p>
+                    </div>
+                    <div class="h-8 w-8 rounded bg-slate-800/50 flex items-center justify-center">
+                        <i data-lucide="zap" class="w-4 h-4 text-slate-500"></i>
+                    </div>
+                </div>
+                <div class="glass p-3 flex justify-between items-center bg-purple-500/5 text-purple-400">
+                    <div>
+                        <p class="text-[8px] text-slate-500 font-bold uppercase">Signals_Captured</p>
+                        <p id="intel-count" class="text-xl font-black font-mono">0</p>
+                    </div>
+                    <div class="h-8 w-8 rounded bg-purple-500/10 flex items-center justify-center">
+                        <i data-lucide="cpu" class="w-4 h-4 text-purple-400"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Console (Professional Scroll Structure) -->
+            <div class="glass flex-1 flex flex-col overflow-hidden relative">
+
+                <!-- 1. SCROLLABLE MESSAGE AREA -->
+                <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar scroll-smooth">
+                    <div class="flex justify-center">
+                        <span class="terminal-text text-[9px] opacity-40 uppercase tracking-[0.2em]">[ Kernel Active:
+                            Waiting for Transmission ]</span>
+                    </div>
+                </div>
+
+                <!-- 2. FLOATING INDICATOR (Over Scrollable Area) -->
+                <div id="ai-typing" class="hidden absolute bottom-24 left-8 animate-pulse z-20">
+                    <div
+                        class="flex items-center gap-2 bg-blue-600/20 border border-blue-500/30 px-4 py-1.5 rounded-full backdrop-blur-md">
+                        <div class="flex gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-50"></span>
+                        </div>
+                        <span
+                            class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Processing...</span>
+                    </div>
+                </div>
+
+                <!-- 3. FIXED INPUT BAR (Outside Scroll Area) -->
+                <div class="p-4 bg-black/80 border-t border-slate-800 backdrop-blur-md flex-shrink-0 z-30">
+                    <form id="chat-form" class="flex gap-3">
+                        <div class="flex-1">
+                            <input id="message-input" type="text" autocomplete="off"
+                                placeholder="Type a scam message..."
+                                class="w-full bg-black/50 border border-slate-700 rounded-lg px-6 py-3.5 text-sm font-mono text-blue-100 placeholder:text-slate-800 focus:outline-none focus:border-blue-500/50 transition-all">
+                        </div>
+                        <button type="submit"
+                            class="bg-blue-600 hover:bg-blue-500 text-white px-8 rounded-lg font-black text-xs uppercase tracking-widest transition-all shadow-lg active:scale-95">
+                            Send
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- Logs & Network (Right) -->
+        <div class="col-span-3 flex flex-col gap-4 overflow-hidden">
+            <div class="glass h-1/2 p-5 flex flex-col overflow-hidden">
+                <h3
+                    class="text-[10px] font-black text-slate-400 tracking-widest uppercase mb-4 flex items-center gap-2">
+                    <i data-lucide="terminal" class="w-3 h-3"></i> System_Live_Logs
+                </h3>
+                <div id="terminal-logs" class="flex-1 overflow-y-auto space-y-1 terminal-text lowercase">
+                    <div>[00:00:01] kernel_init... complete</div>
+                    <div>[00:00:02] secure_layer... verified</div>
+                    <div>[00:00:03] neural_bridge_gemini... connected</div>
+                </div>
+            </div>
+
+            <div class="glass flex-1 p-5 flex flex-col">
+                <h3 class="text-[10px] font-black text-slate-400 tracking-widest uppercase mb-5">Traffic_Monitor</h3>
+                <div class="space-y-4 flex-1">
+                    <div class="registry-card p-3 rounded-lg border border-white/5">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-[9px] font-bold text-slate-400">INBOUND_FLOW</span>
+                            <span class="text-[8px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded">STABLE</span>
+                        </div>
+                        <div class="h-1 bg-slate-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-blue-500 w-3/4 animate-pulse"></div>
+                        </div>
+                    </div>
+                    <div class="registry-card p-3 rounded-lg border border-white/5">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-[9px] font-bold text-slate-400">CALLBACK_PIPE</span>
+                            <span class="text-[8px] bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded">IDLE</span>
+                        </div>
+                        <div class="h-1 bg-slate-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-purple-500 w-1/4"></div>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="toggleSettings()"
+                    class="w-full py-3 bg-slate-900 border border-slate-800 rounded-lg text-[10px] font-bold text-slate-500 hover:text-white uppercase tracking-widest transition mt-4">Node_Config</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Settings Overlay -->
+    <div id="settings-modal"
+        class="hidden fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-6">
+        <div class="glass max-w-xl w-full p-10 relative border-blue-500/40">
+            <button onclick="toggleSettings()" class="absolute top-6 right-6 text-slate-500 hover:text-white"><i
+                    data-lucide="x-circle" class="w-6 h-6"></i></button>
+            <h2 class="text-3xl font-black mb-1 tracking-tighter text-blue-400">KERNEL_CONFIG</h2>
+            <p class="text-[10px] font-mono text-slate-500 mb-8 uppercase tracking-widest">Environment Variables &
+                Protocol Handlers</p>
+
+            <div class="space-y-6">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase">Master_Access_Key</label>
+                    <input id="api-key-input" type="password" value="my-honeypot-secret-2024"
+                        class="w-full bg-black border border-slate-700 rounded-lg p-3 text-sm font-mono text-blue-300 focus:border-blue-500 transition-all outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase">Input_Channel</label>
+                        <select id="channel-select"
+                            class="w-full bg-black border border-slate-700 rounded-lg p-3 text-sm font-mono text-blue-300 focus:border-blue-500 outline-none">
+                            <option value="WhatsApp">WHATSAPP_PROTOCOL</option>
+                            <option value="SMS">GSM_ENCODING</option>
+                        </select>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase">Natural_Language</label>
+                        <select id="language-select"
+                            class="w-full bg-black border border-slate-700 rounded-lg p-3 text-sm font-mono text-blue-300 focus:border-blue-500 outline-none">
+                            <option value="English">ENGLISH_GLOBAL</option>
+                            <option value="Hindi">HINDI_REGIONAL</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-10 p-4 bg-blue-500/5 rounded-lg border border-blue-500/10">
+                <p class="text-[9px] text-blue-400 font-mono italic">NOTICE: Changes will be committed to the kernel on
+                    the next heartbeat. Do not terminate process during sync.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        let sessionId = "";
+        let conversationHistory = [];
+        const API_URL = "http://localhost:8001";
+
+        const logTerm = (msg) => {
+            const term = document.getElementById('terminal-logs');
+            const entry = document.createElement('div');
+            const ts = new Date().toLocaleTimeString([], { hour12: false });
+            entry.innerHTML = `<span class="opacity-40 text-[9px]">[${ts}]</span> ${msg}`;
+            term.appendChild(entry);
+            term.scrollTop = term.scrollHeight;
+        };
+
+        const resetSession = () => {
+            sessionId = `HP_KERNEL_${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+            conversationHistory = [];
+            logTerm(`Flushing buffers... creating new session: ${sessionId}`);
+            document.getElementById('chat-messages').innerHTML = `<div class="flex justify-center"><span class="terminal-text text-[9px] opacity-40 uppercase tracking-[0.2em]">[ NEW_SESSION_READY: ${sessionId} ]</span></div>`;
+            updateStatus(0, 0, 0);
+            updateIntel({ bankAccounts: [], upiIds: [], phishingLinks: [], suspiciousKeywords: [] });
+            document.getElementById('callback-progress').style.width = '0%';
+            document.getElementById('callback-status').innerText = 'READY';
+        };
+
+        const addMessage = (sender, text) => {
+            const chat = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            const isScam = sender === 'scammer';
+            div.className = `flex ${isScam ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2 duration-300`;
+
+            div.innerHTML = `
+                <div class="max-w-[80%] flex flex-col ${isScam ? 'items-end' : 'items-start'}">
+                    <span class="text-[8px] font-mono text-slate-600 uppercase mb-1 tracking-widest">${sender}_buffer</span>
+                    <div class="${isScam ? 'bg-blue-600/10 border-blue-500/30' : 'bg-slate-800/10 border-slate-700/30'} border px-5 py-3 rounded-lg text-sm italic leading-relaxed text-slate-100">
+                        "${text}"
+                    </div>
+                </div>
+            `;
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+        };
+
+        const updateStatus = (prob, msgs, extracts) => {
+            document.getElementById('scam-prob').innerText = `${prob.toFixed(2)}%`;
+            document.getElementById('msg-count').innerText = msgs;
+            document.getElementById('intel-count').innerText = extracts;
+        };
+
+        const updateIntel = (intel) => {
+            const render = (id, items, color) => {
+                const el = document.getElementById(id);
+                if (!items || items.length === 0) el.innerHTML = '<p class="text-[9px] text-slate-800 italic uppercase">Null_Pointer</p>';
+                else el.innerHTML = items.map(i => `<div class="bg-${color}-500/5 border border-${color}-500/20 text-${color}-400 px-3 py-1.5 text-[10px] font-mono rounded overflow-hidden truncate flex justify-between items-center group">
+                    <span>${i}</span>
+                    <i data-lucide="fingerprint" class="w-2 h-2 opacity-50 group-hover:opacity-100 transition"></i>
+                </div>`).join('');
+                lucide.createIcons();
+            };
+
+            render('intel-banks', intel.bankAccounts || [], 'blue');
+            render('intel-upis', intel.upiIds || [], 'purple');
+            render('intel-links', intel.phishingLinks || [], 'red');
+            document.getElementById('intel-keywords').innerHTML = (intel.suspiciousKeywords || []).map(k => `<span class="bg-orange-500/10 border border-orange-500/20 text-orange-400 px-2 py-0.5 text-[8px] font-bold rounded uppercase tracking-tighter">${k}</span>`).join('');
+        };
+
+        const toggleSettings = () => document.getElementById('settings-modal').classList.toggle('hidden');
+
+        document.getElementById('chat-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            addMessage('scammer', text);
+            input.value = "";
+            logTerm(`Transmission_IN: [${text.substring(0, 25)}...]`);
+
+            document.getElementById('ai-typing').classList.remove('hidden');
+
+            try {
+                const res = await fetch(`${API_URL}/api/scam-detection`, {
+                    method: 'POST',
+                    headers: { 'x-api-key': document.getElementById('api-key-input').value, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionId: sessionId,
+                        message: { sender: "scammer", text: text, timestamp: Date.now() },
+                        conversationHistory: conversationHistory,
+                        metadata: {
+                            channel: document.getElementById('channel-select').value,
+                            language: document.getElementById('language-select').value,
+                            locale: "IN"
+                        }
+                    })
+                });
+
+                const data = await res.json();
+                document.getElementById('ai-typing').classList.add('hidden');
+
+                if (data.status === 'success') {
+                    addMessage('agent', data.reply);
+                    logTerm(`Kernel_Response_OUT: [OK]`);
+                    conversationHistory.push({ sender: "scammer", text: text });
+                    conversationHistory.push({ sender: "user", text: data.reply });
+
+                    // Update Analytics
+                    const intelRes = await fetch(`${API_URL}/api/session-intelligence/${sessionId}`, {
+                        headers: { 'x-api-key': document.getElementById('api-key-input').value }
+                    });
+                    const intelData = await intelRes.json();
+                    if (intelData.status === 'success') {
+                        updateIntel(intelData.intelligence);
+                        const total = (intelData.intelligence.bankAccounts?.length || 0) + (intelData.intelligence.upiIds?.length || 0) + (intelData.intelligence.phishingLinks?.length || 0);
+                        updateStatus(intelData.isScam ? 94.8 : 8.2, intelData.messageCount, total);
+
+                        const prog = Math.min((intelData.messageCount / 8) * 100, 100);
+                        document.getElementById('callback-progress').style.width = prog + '%';
+                        document.getElementById('callback-status').innerText = prog === 100 ? 'SYNC_COMPLETE' : prog + '%';
+                        if (prog === 100) logTerm("CRITICAL_EVENT: GUVI_REGISTRY_SYNC_SUCCESS");
+                    }
+                }
+            } catch (err) { logTerm("RUNTIME_ERROR: Protocol handshake failure."); }
+        };
+
+        // Realistic System Clock
+        setInterval(() => {
+            const start = performance.now();
+            const time = (performance.now() / 1000).toFixed(2).replace('.', ':');
+            document.getElementById('uptime').innerText = `00:00:${time}:${Math.floor(Math.random() * 99)}`;
+        }, 100);
+
+        resetSession();
+    </script>
+</body>
+
+</html>

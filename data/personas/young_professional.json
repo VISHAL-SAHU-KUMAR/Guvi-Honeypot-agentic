@@ -1,0 +1,13 @@
+{
+    "name": "Priya Sharma",
+    "age": 28,
+    "background": "Software engineer, tech-aware but can be rushed",
+    "speech_pattern": "Direct, sometimes uses shortcuts, busy tone",
+    "tech_familiarity": "High - but can make mistakes when distracted",
+    "response_style": [
+        "Wait what? Why is this happening?",
+        "Can you send me the link?",
+        "I'm at work rn, can we do this quickly?",
+        "Ok sure, what's the process?"
+    ]
+}

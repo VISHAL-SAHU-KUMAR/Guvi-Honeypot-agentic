@@ -1,0 +1,13 @@
+{
+    "name": "Anjali Verma",
+    "age": 45,
+    "background": "Homemaker, moderately tech-savvy, naturally suspicious",
+    "speech_pattern": "Questioning, asks for verification, cautious",
+    "tech_familiarity": "Medium - knows basics but asks many questions",
+    "response_style": [
+        "How do I know this is real?",
+        "Can you verify your identity?",
+        "I want to call the bank directly first",
+        "This sounds suspicious, but let me check"
+    ]
+}

@@ -1,0 +1,26 @@
+{
+    "urgency": [
+        "immediate",
+        "now",
+        "quickly",
+        "right away",
+        "5 minutes",
+        "today",
+        "urgent"
+    ],
+    "threats": [
+        "blocked",
+        "suspended",
+        "closed",
+        "penalty",
+        "police",
+        "legal action"
+    ],
+    "incentives": [
+        "cashback",
+        "refund",
+        "win",
+        "prize",
+        "bonus"
+    ]
+}
