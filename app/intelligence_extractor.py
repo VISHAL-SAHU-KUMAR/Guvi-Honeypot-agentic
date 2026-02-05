@@ -13,7 +13,7 @@ def extract_intelligence(text):
     keywords = [w for w in ["otp","verify","urgent","blocked","refund","account"] if w in text_lower]
 
     return {
-        "bankAccounts": [],
+        "bankAccounts": [],        # Only for real bank patterns if you add later
         "upiIds": upis,
         "phishingLinks": urls,
         "phoneNumbers": phones,
