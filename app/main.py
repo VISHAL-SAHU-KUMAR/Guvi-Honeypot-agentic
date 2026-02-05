@@ -126,11 +126,10 @@ def send_final_callback(session_id):
 
     try:
         response = requests.post(GUVI_CALLBACK_URL, json=payload, timeout=5)
-        if response.status_code == 200:
-            logger.info(f"GUVI callback sent successfully for session {session_id}")
-        else:
-            logger.error(f"Callback failed: {response.status_code} - {response.text}")
+        print("GUVI callback sent successfully:", response.status_code)
+        logger.info(f"GUVI callback sent successfully for session {session_id}")
     except Exception as e:
+        print("GUVI callback failed:", str(e))
         logger.error(f"Callback failed: {e}")
 
 @app.get("/api/session-intelligence/{session_id}")
