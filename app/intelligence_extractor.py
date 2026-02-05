@@ -1,20 +1,21 @@
 import re
 
 def extract_intelligence(text):
-    """
-    Mandatory Regex-based intelligence extraction for Hackathon scoring.
-    Extracts phone numbers, UPI IDs, and phishing links.
-    """
     phone_pattern = r"\b\d{10}\b"
     upi_pattern = r"\b[\w.-]+@[\w]+\b"
     url_pattern = r"http[s]?://\S+"
 
+    phones = re.findall(phone_pattern, text)
+    upis = re.findall(upi_pattern, text)
+    urls = re.findall(url_pattern, text)
+
     text_lower = text.lower()
+    keywords = [w for w in ["otp","verify","urgent","blocked","refund","account"] if w in text_lower]
 
     return {
-        "bankAccounts": [],
-        "upiIds": re.findall(upi_pattern, text),
-        "phishingLinks": re.findall(url_pattern, text),
-        "phoneNumbers": re.findall(phone_pattern, text),
-        "suspiciousKeywords": [w for w in ["otp","verify","urgent","blocked","refund"] if w in text_lower]
+        "bankAccounts": [],   # keep empty unless true bank pattern
+        "upiIds": upis,
+        "phishingLinks": urls,
+        "phoneNumbers": phones,
+        "suspiciousKeywords": keywords
     }
