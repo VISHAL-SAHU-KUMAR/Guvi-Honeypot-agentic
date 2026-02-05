@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # API Keys
-    API_KEY: str = "GUVI_SECRET_2026"
+    API_KEY: str = "GUVI_HACKATHON_2026"
     GEMINI_API_KEY: str = "your-gemini-api-key"
     
     # Application
