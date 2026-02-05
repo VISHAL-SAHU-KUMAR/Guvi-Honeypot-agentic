@@ -453,6 +453,13 @@
                     })
                 });
 
+                if (!res.ok) {
+                    const errData = await res.json();
+                    logTerm(`KERNEL_ERROR: ${res.status} [${errData.detail || 'Access Denied'}]`);
+                    document.getElementById('ai-typing').classList.add('hidden');
+                    return;
+                }
+
                 const data = await res.json();
                 document.getElementById('ai-typing').classList.add('hidden');
 
@@ -478,7 +485,10 @@
                         if (prog === 100) logTerm("CRITICAL_EVENT: GUVI_REGISTRY_SYNC_SUCCESS");
                     }
                 }
-            } catch (err) { logTerm("RUNTIME_ERROR: Protocol handshake failure."); }
+            } catch (err) {
+                logTerm(`RUNTIME_ERROR: ${err.message}`);
+                document.getElementById('ai-typing').classList.add('hidden');
+            }
         };
 
         // Realistic System Clock
