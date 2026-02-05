@@ -71,7 +71,7 @@ async def detect_and_engage(
     history = payload.conversationHistory
     
     # 2. Process message through mandatory logic
-    scam = is_scam(message_text)
+    scam = await is_scam(message_text)
     intel = extract_intelligence(message_text)
     
     # 3. Maintain session memory for scoring
@@ -97,7 +97,7 @@ async def detect_and_engage(
                     session_memory[session_id]["intel"][key].append(item)
     
     # 4. Generate AI reply (Mandatory Requirement #5)
-    reply = generate_reply(history, message_text)
+    reply = await generate_reply(history, message_text)
     
     # 5. 🎯 Mandatory Trigger: After 3 messages, send callback (Requirement #8)
     if scam and session_memory[session_id]["messages"] >= 3:
