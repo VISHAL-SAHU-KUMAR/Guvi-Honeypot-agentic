@@ -11,8 +11,16 @@ from app.config import settings
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from app.utils.logger import setup_logger
 import logging
+import os
+import requests
+from .intelligence_extractor import extract_intelligence
+from .scam_detector import is_scam
+from .agent_logic import generate_reply
+
+# Mandatory Scoring Config
+GUVI_CALLBACK_URL = os.getenv("GUVI_CALLBACK_URL", "https://hackathon.guvi.in/api/updateHoneyPotFinalResult")
+session_memory = {}
 
 # Initialize app and Limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -43,124 +51,103 @@ session_manager = SessionManager()
 callback_service = CallbackService()
 
 
-@app.post("/api/scam-detection", response_model=AgentResponse)
-@app.post("/honeypot", response_model=AgentResponse)
+@app.post("/api/scam-detection")
+@app.post("/honeypot")
 @limiter.limit("100/minute")
 async def detect_and_engage(
     request: Request,
     payload: IncomingMessage,
     x_api_key: str = Header(...)
 ):
-    """Main API endpoint for scam detection and engagement"""
+    """Refactored endpoint to match Hackathon Scoring Requirement #2 & #8"""
     
-    # Validate API key
+    # 1. Validate API key
     if x_api_key != settings.API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid API key")
+        raise HTTPException(status_code=401, detail="Unauthorized")
     
-    try:
-        session_id = payload.sessionId
-        message = payload.message
-        history = payload.conversationHistory
+    session_id = payload.sessionId
+    message_text = payload.message.text
+    history = payload.conversationHistory
+    
+    # 2. Process message through mandatory logic
+    scam = is_scam(message_text)
+    intel = extract_intelligence(message_text)
+    
+    # 3. Maintain session memory for scoring
+    if session_id not in session_memory:
+        session_memory[session_id] = {
+            "messages": 0,
+            "intel": {
+                "bankAccounts": [],
+                "upiIds": [],
+                "phishingLinks": [],
+                "phoneNumbers": [],
+                "suspiciousKeywords": []
+            }
+        }
+    
+    session_memory[session_id]["messages"] += 1
+    
+    # Update intelligence buffer (Mandatory Requirement #7)
+    for key in intel:
+        if isinstance(intel[key], list):
+            for item in intel[key]:
+                if item not in session_memory[session_id]["intel"][key]:
+                    session_memory[session_id]["intel"][key].append(item)
+    
+    # 4. Generate AI reply (Mandatory Requirement #5)
+    reply = generate_reply(history, message_text)
+    
+    # 5. 🎯 Mandatory Trigger: After 3 messages, send callback (Requirement #8)
+    if scam and session_memory[session_id]["messages"] >= 3:
+        send_final_callback(session_id)
         
-        # Step 1: Detect scam intent
-        is_scam, confidence = await scam_detector.analyze(
-            message.text, 
-            history,
-            payload.metadata.dict() if payload.metadata else {}
-        )
-        
-        # Step 2: Get or create session
-        session = await session_manager.get_or_create_session(
-            session_id, 
-            is_scam=is_scam
-        )
-        
-        # Step 3: Generate agent response
-        agent_reply = await conversation_agent.generate_response(
-            session=session,
-            current_message=message.text,
-            history=history,
-            metadata=payload.metadata.dict() if payload.metadata else {},
-            scam_confidence=confidence
-        )
-        
-        # Step 4: Update session
-        await session_manager.update_session(
-            session_id,
-            message=message.text,
-            reply=agent_reply,
-            sender="user"
-        )
-        
-        # Step 5: Check if conversation should end
-        # We use a copy of history + new user message
-        full_history = history + [{"sender": "scammer", "text": message.text}, {"sender": "user", "text": agent_reply}]
-        should_end, intelligence = await conversation_agent.should_end_conversation(
-            session_id, full_history
-        )
-        
-        # Step 6: Store latest intelligence in session
-        session['intelligence'] = intelligence
-        
-        if should_end and is_scam:
-            # Send final callback to GUVI
-            await callback_service.send_final_result(
-                session_id=session_id,
-                session_data=session,
-                intelligence=intelligence
-            )
-        
-        return AgentResponse(
-            status="success",
-            reply=agent_reply
-        )
-        
-    except Exception as e:
-        logger.error(f"Error processing request: {e}", exc_info=True)
-        error_msg = str(e)
-        if "quota" in error_msg.lower() or "limit" in error_msg.lower():
-            detail = "Gemini API Quota exceeded. Please check your Google Cloud Console."
-        elif "API key" in error_msg:
-            detail = "Gemini API Key is invalid or expired."
-        else:
-            detail = error_msg
-        raise HTTPException(status_code=500, detail=detail)
+    return {
+        "status": "success",
+        "reply": reply,
+        "isScam": scam,
+        "messageCount": session_memory[session_id]["messages"]
+    }
 
+def send_final_callback(session_id):
+    """Mandatory Callback Function for Hackathon Scoring Requirement #8"""
+    data = session_memory.get(session_id)
+    if not data:
+        return
+
+    payload = {
+        "sessionId": session_id,
+        "scamDetected": True,
+        "totalMessagesExchanged": data["messages"],
+        "extractedIntelligence": data["intel"],
+        "agentNotes": "Scammer engagement threshold reached. Strategic extraction complete."
+    }
+
+    try:
+        response = requests.post(GUVI_CALLBACK_URL, json=payload, timeout=5)
+        if response.status_code == 200:
+            logger.info(f"GUVI callback sent successfully for session {session_id}")
+        else:
+            logger.error(f"Callback failed: {response.status_code} - {response.text}")
+    except Exception as e:
+        logger.error(f"Callback failed: {e}")
 
 @app.get("/api/session-intelligence/{session_id}")
-async def get_session_intelligence(session_id: str, x_api_key: str = Header(None)):
-    """Live intelligence polling for UI"""
-    try:
-        if x_api_key != settings.API_KEY:
-            raise HTTPException(status_code=401, detail="Invalid API key")
+async def get_intel(session_id: str, x_api_key: str = Header(...)):
+    """Live intelligence polling for UI powered by session_memory"""
+    if x_api_key != settings.API_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    data = session_memory.get(session_id)
+    if not data:
+        return {"status": "error", "message": "Session not found"}
         
-        session = await session_manager.get_session(session_id)
-        if not session:
-            raise HTTPException(status_code=404, detail="Session not found")
-        
-        intel = session.get('intelligence', {})
-        
-        # Super defensive conversion
-        intel_dict = {}
-        if hasattr(intel, 'model_dump'):
-            try: intel_dict = intel.model_dump()
-            except: pass
-        if not intel_dict and hasattr(intel, 'dict'):
-            try: intel_dict = intel.dict()
-            except: pass
-        if not intel_dict and isinstance(intel, dict):
-            intel_dict = intel
-            
-        return {
-            "status": "success",
-            "intelligence": intel_dict,
-            "isScam": session.get('is_scam', False),
-            "messageCount": len(session.get('messages', []))
-        }
-    except Exception as e:
-        logger.error(f"Intelligence Endpoint Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-
+    return {
+        "status": "success",
+        "intelligence": data["intel"],
+        "isScam": True if data["intel"]["suspiciousKeywords"] else False,
+        "messageCount": data["messages"]
+    }
 
 @app.get("/health")
 @app.get("/healthz")
